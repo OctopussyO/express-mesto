@@ -20,5 +20,9 @@ module.exports.getUser = (req, res) => {
         res.status(404).send({ message: 'Нет пользователя с таким id' });
       }
       res.send(user);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
