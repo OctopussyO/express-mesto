@@ -22,3 +22,9 @@ module.exports.getUser = (req, res) => {
       res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
+
+module.exports.createUser = (req, res) => {
+  User.create({ ...req.body })
+    .then((user) => res.status(200).send(user))
+    .catch((err) => res.status(400).send(err));
+};
