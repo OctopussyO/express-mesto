@@ -4,7 +4,10 @@ module.exports.getCards = (req, res) => {
   Card.find()
     .then((data) => res.send(data))
     .catch(() => {
-      res.status(404).send({ message: 'Нет такого файла' });
+      // Обработка 404 тут не нужна, т.к. пользователь ничего не вводит
+      // и несуществовать файл может только при ошибке разработчика, если
+      // ввести неверное имя модели. При этом сервер вернёт пустой массив.
+      res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
 
@@ -13,20 +16,27 @@ module.exports.getCard = (req, res) => {
   Card.findById(id)
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: 'Нет карточки с таким id' });
+        return res.status(404).send({ message: 'Нет карточки с таким id' });
       }
-      res.send(card);
+      return res.send(card);
     })
     .catch((err) => {
-      console.error(err);
-      res.status(500).send({ message: 'Ошибка на сервере' });
+      if (err.name === 'CastError') {
+        return res.status(400).send({ message: 'Введён неверный id' });
+      }
+      return res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
 
 module.exports.createCard = (req, res) => {
   Card.create({ owner: req.user, ...req.body })
     .then((card) => res.status(200).send(card))
-    .catch((err) => res.status(400).send(err));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        return res.status(400).send({ message: 'Введённые данные не прошли валидацию' });
+      }
+      return res.status(500).send({ message: 'Ошибка на сервере' });
+    });
 };
 
 module.exports.likeCard = (req, res) => {
@@ -36,7 +46,12 @@ module.exports.likeCard = (req, res) => {
     { new: true },
   )
     .then((card) => res.status(200).send(card))
-    .catch((err) => res.status(400).send(err));
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        return res.status(400).send({ message: 'Неверный формат id' });
+      }
+      return res.status(500).send({ message: 'Ошибка на сервере' });
+    });
 };
 
 module.exports.dislikeCard = (req, res) => {
@@ -46,5 +61,10 @@ module.exports.dislikeCard = (req, res) => {
     { new: true },
   )
     .then((card) => res.status(200).send(card))
-    .catch((err) => res.status(400).send(err));
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        return res.status(400).send({ message: 'Неверный формат id' });
+      }
+      return res.status(500).send({ message: 'Ошибка на сервере' });
+    });
 };
