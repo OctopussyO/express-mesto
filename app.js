@@ -13,7 +13,12 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
   useCreateIndex: true,
   useFindAndModify: false,
-});
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('База данных подключена!'))
+  .catch((err) => {
+    console.log(`Ошибка подключения базы данных: ${err.message}`);
+  });
 
 app.use(bodyParser.json());
 
