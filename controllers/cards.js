@@ -11,23 +11,6 @@ module.exports.getCards = (req, res) => {
     });
 };
 
-module.exports.getCard = (req, res) => {
-  const { id } = req.params;
-  Card.findById(id)
-    .then((card) => {
-      if (!card) {
-        return res.status(404).send({ message: 'Нет карточки с таким id' });
-      }
-      return res.send(card);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Введён неверный id' });
-      }
-      return res.status(500).send({ message: 'Ошибка на сервере' });
-    });
-};
-
 module.exports.createCard = (req, res) => {
   Card.create({ owner: req.user, ...req.body })
     .then((card) => res.status(200).send(card))
@@ -39,18 +22,38 @@ module.exports.createCard = (req, res) => {
     });
 };
 
+module.exports.deleteCard = (req, res) => {
+  const { id } = req.params;
+  Card.findByIdAndRemove(id)
+    .orFail(new Error('NotExistId'))
+    .then((card) => res.status(200).send(card))
+    .catch((err) => {
+      if (err.message === 'NotExistId') {
+        res.status(404).send({ message: 'Нет карточки с таким id' });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Введён неверный id' });
+      } else {
+        res.status(500).send({ message: 'Ошибка на сервере' });
+      }
+    });
+};
+
 module.exports.likeCard = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.id,
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
+    .orFail(new Error('NotExistId'))
     .then((card) => res.status(200).send(card))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Неверный формат id' });
+      if (err.message === 'NotExistId') {
+        res.status(404).send({ message: 'Нет карточки с таким id' });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Неверный формат id' });
+      } else {
+        res.status(500).send({ message: 'Ошибка на сервере' });
       }
-      return res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
 
@@ -60,11 +63,15 @@ module.exports.dislikeCard = (req, res) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
+    .orFail(new Error('NotExistId'))
     .then((card) => res.status(200).send(card))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Неверный формат id' });
+      if (err.message === 'NotExistId') {
+        res.status(404).send({ message: 'Нет карточки с таким id' });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Неверный формат id' });
+      } else {
+        res.status(500).send({ message: 'Ошибка на сервере' });
       }
-      return res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };

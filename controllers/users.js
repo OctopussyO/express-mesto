@@ -11,17 +11,16 @@ module.exports.getUsers = (req, res) => {
 module.exports.getUser = (req, res) => {
   const { id } = req.params;
   User.findById(id)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: 'Нет пользователя с таким id' });
-      }
-      return res.send(user);
-    })
+    .orFail(new Error('NotExistId'))
+    .then((user) => res.send(user))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Введён неверный id' });
+      if (err.message === 'NotExistId') {
+        res.status(404).send({ message: 'Нет пользователя с таким id' });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Введён неверный id' });
+      } else {
+        res.status(500).send({ message: 'Ошибка на сервере' });
       }
-      return res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
 
@@ -46,12 +45,16 @@ module.exports.updateUserData = (req, res) => {
       runValidators: true,
     },
   )
+    .orFail(new Error('NotExistId'))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Введённые данные не прошли валидацию' });
+      if (err.message === 'NotExistId') {
+        res.status(404).send({ message: 'Пользователя с таким id не существует' });
+      } else if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Введённые данные не прошли валидацию' });
+      } else {
+        res.status(500).send({ message: 'Ошибка на сервере' });
       }
-      return res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
 
@@ -61,15 +64,22 @@ module.exports.updateUserAvatar = (req, res) => {
     req.user._id,
     { avatar },
     {
+      // Флаг new позволяет вернуть обновлённые данные, а не создаёт нового пользователя.
+      // Для создания нового пользователя при его отсутствии потребовалось бы использовать
+      // флаг upsert
       new: true,
       runValidators: true,
     },
   )
+    .orFail(new Error('NotExistId'))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Введённые данные не прошли валидацию' });
+      if (err.message === 'NotExistId') {
+        res.status(404).send({ message: 'Пользователя с таким id не существует' });
+      } else if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Введённые данные не прошли валидацию' });
+      } else {
+        res.status(500).send({ message: 'Ошибка на сервере' });
       }
-      return res.status(500).send({ message: 'Ошибка на сервере' });
     });
 };
